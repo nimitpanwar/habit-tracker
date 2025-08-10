@@ -1,0 +1,1022 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Habit Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0d1117;
+            --bg-secondary: #161b22;
+            --bg-tertiary: #21262d;
+            --border-primary: #30363d;
+            --border-secondary: #21262d;
+            --text-primary: #e6edf3;
+            --text-secondary: #7d8590;
+            --text-muted: #656d76;
+            --green-1: #0e4429;
+            --green-2: #006d32;
+            --green-3: #26a641;
+            --green-4: #39d353;
+            --accent: #58a6ff;
+        }
+        
+        * {
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            margin: 0;
+            line-height: 1.5;
+            font-size: 14px;
+        }
+        
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg-primary); }
+        ::-webkit-scrollbar-thumb { 
+            background: var(--border-primary); 
+            border-radius: 4px; 
+        }
+        ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+        
+        .glass-effect {
+            background: rgba(22, 27, 34, 0.8);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border-primary);
+        }
+        
+        .btn-primary {
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 8px 16px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .btn-primary:hover {
+            background: #4493f8;
+            transform: translateY(-1px);
+        }
+        
+        .btn-secondary {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-primary);
+            border-radius: 6px;
+            padding: 8px 16px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .btn-secondary:hover {
+            background: var(--border-primary);
+            border-color: var(--text-muted);
+        }
+        
+        .habit-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-primary);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            transition: all 0.3s ease;
+        }
+        .habit-card:hover {
+            border-color: var(--border-secondary);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        
+        .heatmap-container {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-primary);
+            border-radius: 8px;
+            padding: 16px;
+            margin: 16px 0;
+        }
+        
+        .calendar-wrapper {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            overflow-x: auto;
+            padding-bottom: 8px;
+        }
+        
+        .day-labels {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            font-size: 10px;
+            color: var(--text-muted);
+            padding-top: 20px;
+            margin-right: 4px;
+        }
+        .day-label {
+            height: 10px;
+            display: flex;
+            align-items: center;
+        }
+        .day-label:nth-child(even) { opacity: 0; }
+        
+        .months-container {
+            display: flex;
+            gap: 4px;
+        }
+        
+        .month-container {
+            position: relative;
+        }
+        
+        .month-label {
+            font-size: 10px;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+            text-align: left;
+        }
+        
+        .calendar-grid {
+            display: grid;
+            grid-template-rows: repeat(7, 10px);
+            grid-auto-flow: column;
+            gap: 2px;
+        }
+        
+        .day-cell {
+            width: 10px;
+            height: 10px;
+            border-radius: 2px;
+            background: var(--bg-tertiary);
+            cursor: pointer;
+            position: relative;
+            transition: all 0.15s ease;
+        }
+        .day-cell:hover {
+            outline: 1px solid var(--text-secondary);
+            outline-offset: 1px;
+        }
+        .day-cell.empty {
+            background: transparent;
+            cursor: default;
+        }
+        .day-cell.empty:hover { outline: none; }
+        
+        .day-cell.level-1 { background: var(--green-1); }
+        .day-cell.level-2 { background: var(--green-2); }
+        .day-cell.level-3 { background: var(--green-3); }
+        .day-cell.level-4 { background: var(--green-4); }
+        
+        .tooltip {
+            position: absolute;
+            bottom: 120%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+            z-index: 1000;
+            border: 1px solid var(--border-primary);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        }
+        .day-cell:hover .tooltip {
+            opacity: 1;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid var(--border-primary);
+        }
+        
+        .stat-item {
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 2px;
+        }
+        .stat-label {
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .header-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+            padding: 20px 0;
+        }
+        
+        .title-section h1 {
+            font-size: 28px;
+            font-weight: 600;
+            margin: 0 0 4px 0;
+            color: var(--text-primary);
+        }
+        
+        .user-info {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+        
+        .habit-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 8px;
+        }
+        
+        .habit-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 0 0 4px 0;
+        }
+        
+        .habit-goal {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+        
+        .habit-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .year-nav {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--bg-tertiary);
+            border-radius: 6px;
+            padding: 4px 8px;
+        }
+        
+        .year-btn {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 2px 6px;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }
+        .year-btn:hover {
+            background: var(--border-primary);
+            color: var(--text-primary);
+        }
+        
+        .year-display {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-primary);
+            min-width: 40px;
+            text-align: center;
+        }
+        
+        .delete-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }
+        .delete-btn:hover {
+            background: #da3633;
+            color: white;
+        }
+        
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            z-index: 1000;
+        }
+        
+        .modal-content {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-primary);
+            border-radius: 12px;
+            padding: 24px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 16px 64px rgba(0, 0, 0, 0.5);
+        }
+        
+        .modal-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin: 0 0 20px 0;
+            color: var(--text-primary);
+        }
+        
+        .form-group {
+            margin-bottom: 16px;
+        }
+        
+        .form-label {
+            display: block;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+        }
+        
+        .form-input {
+            width: 100%;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-primary);
+            color: var(--text-primary);
+            border-radius: 6px;
+            padding: 10px 12px;
+            font-size: 14px;
+            transition: all 0.2s ease;
+        }
+        .form-input:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.1);
+        }
+        
+        .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            margin-top: 20px;
+        }
+        
+        .loading-spinner {
+            position: fixed;
+            inset: 0;
+            background: rgba(13, 17, 23, 0.8);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+        
+        .spinner {
+            width: 32px;
+            height: 32px;
+            border: 3px solid var(--border-primary);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .message-toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            z-index: 1500;
+            transform: translateY(100px);
+            transition: all 0.3s ease;
+            border: 1px solid;
+        }
+        .message-toast.show {
+            transform: translateY(0);
+        }
+        .message-toast.success {
+            background: #238636;
+            border-color: #2ea043;
+            color: white;
+        }
+        .message-toast.error {
+            background: #da3633;
+            border-color: #f85149;
+            color: white;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 80px 20px;
+            color: var(--text-secondary);
+        }
+        .empty-state h3 {
+            font-size: 18px;
+            font-weight: 500;
+            margin: 0 0 8px 0;
+            color: var(--text-primary);
+        }
+        .empty-state p {
+            margin: 0;
+            font-size: 14px;
+        }
+        
+        .legend {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            font-size: 10px;
+            color: var(--text-muted);
+            margin-top: 6px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .legend-cell {
+            width: 10px;
+            height: 10px;
+            border-radius: 2px;
+        }
+        
+        @media (max-width: 768px) {
+            .header-section {
+                flex-direction: column;
+                gap: 16px;
+                align-items: flex-start;
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 12px;
+            }
+            
+            .habit-header {
+                flex-direction: column;
+                gap: 12px;
+                align-items: flex-start;
+            }
+            
+            .habit-controls {
+                align-self: flex-end;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container" style="max-width: 1200px; margin: 0 auto; padding: 20px;">
+        <header class="header-section">
+            <div class="title-section">
+                <h1>Discipline</h1>
+                <div class="user-info" id="user-id-display">Loading user...</div>
+            </div>
+            <button class="btn-primary" id="add-habit-btn">
+                New Habit
+            </button>
+        </header>
+
+        <main id="habits-container">
+        </main>
+    </div>
+
+    <div id="loading-spinner" class="loading-spinner">
+        <div class="spinner"></div>
+    </div>
+
+    <div id="habit-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <h2 class="modal-title">Create a New Habit</h2>
+            <form id="habit-form">
+                <div class="form-group">
+                    <label for="habit-name" class="form-label">Habit Name</label>
+                    <input type="text" id="habit-name" class="form-input" placeholder="e.g., Read pages of a book" required>
+                </div>
+                <div class="form-group">
+                    <label for="habit-goal" class="form-label">Daily Goal</label>
+                    <input type="number" id="habit-goal" class="form-input" placeholder="e.g., 10" required min="1">
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" id="cancel-btn">Cancel</button>
+                    <button type="submit" class="btn-primary">Create Habit</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="edit-entry-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content" style="max-width: 300px;">
+            <h2 class="modal-title" id="edit-modal-title">Edit Entry</h2>
+            <form id="edit-entry-form">
+                <input type="hidden" id="edit-habit-id">
+                <input type="hidden" id="edit-date">
+                <div class="form-group">
+                    <label for="edit-value" class="form-label" id="edit-date-label">Value</label>
+                    <input type="number" id="edit-value" class="form-input" placeholder="0" required min="0">
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" id="edit-cancel-btn">Cancel</button>
+                    <button type="submit" class="btn-primary">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="message-toast" class="message-toast">
+        <span id="message-text"></span>
+    </div>
+
+    <script type="module">
+        // Firebase Imports
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, doc, addDoc, onSnapshot, updateDoc, deleteDoc, query, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- PASTE YOUR FIREBASE CONFIGURATION HERE ---
+        const firebaseConfig = {
+            apiKey: "your-api-key",
+            authDomain: "your-project.firebaseapp.com",
+            projectId: "your-project-id",
+            storageBucket: "your-project.appspot.com",
+            messagingSenderId: "123456789",
+            appId: "your-app-id"
+        };
+        // --- END CONFIGURATION ---
+        
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-habit-tracker';
+
+        let app, auth, db, userId;
+        let habitsData = [];
+        let unsubscribeFromHabits = null;
+
+        const habitsContainer = document.getElementById('habits-container');
+        const addHabitBtn = document.getElementById('add-habit-btn');
+        const loadingSpinner = document.getElementById('loading-spinner');
+        
+        const habitModal = document.getElementById('habit-modal');
+        const habitForm = document.getElementById('habit-form');
+        const habitNameInput = document.getElementById('habit-name');
+        const habitGoalInput = document.getElementById('habit-goal');
+        const cancelBtn = document.getElementById('cancel-btn');
+
+        const editEntryModal = document.getElementById('edit-entry-modal');
+        const editEntryForm = document.getElementById('edit-entry-form');
+        const editCancelBtn = document.getElementById('edit-cancel-btn');
+        const editHabitIdInput = document.getElementById('edit-habit-id');
+        const editDateInput = document.getElementById('edit-date');
+        const editValueInput = document.getElementById('edit-value');
+        const editDateLabel = document.getElementById('edit-date-label');
+
+        function initializeFirebase() {
+            try {
+                if (firebaseConfig.apiKey === "YOUR_API_KEY") {
+                    const configFromEnv = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
+                     if(configFromEnv){ app = initializeApp(configFromEnv); } 
+                     else { showMessage("Firebase config is missing.", "error"); return; }
+                } else {
+                    app = initializeApp(firebaseConfig);
+                }
+                db = getFirestore(app);
+                auth = getAuth(app);
+                setLogLevel('debug'); 
+            } catch (error) {
+                console.error("Firebase initialization failed:", error);
+                showMessage("Error connecting to services.", "error");
+            }
+        }
+
+        function authenticateUser() {
+            const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+            onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    userId = user.uid;
+                    document.getElementById('user-id-display').textContent = `User ID: ${userId.slice(0, 5)}...`;
+                    listenForHabitChanges();
+                } else {
+                    try {
+                        if (initialAuthToken) { await signInWithCustomToken(auth, initialAuthToken); } 
+                        else { await signInAnonymously(auth); }
+                    } catch (error) {
+                        console.error("Sign-in failed:", error);
+                        showMessage("Authentication failed.", "error");
+                        loadingSpinner.style.display = 'none';
+                    }
+                }
+            });
+        }
+
+        function listenForHabitChanges() {
+            if (!userId) return;
+            const habitsCollectionRef = collection(db, `artifacts/${appId}/users/${userId}/habits`);
+            if (unsubscribeFromHabits) unsubscribeFromHabits();
+
+            unsubscribeFromHabits = onSnapshot(query(habitsCollectionRef), (querySnapshot) => {
+                const newHabits = [];
+                querySnapshot.forEach((doc) => {
+                    newHabits.push({ id: doc.id, ...doc.data() });
+                });
+                habitsData = newHabits;
+                renderAllHabits();
+                loadingSpinner.style.display = 'none';
+            }, (error) => {
+                console.error("Error fetching habits:", error);
+                showMessage("Could not load habits. Check Firestore Rules.", "error");
+                loadingSpinner.style.display = 'none';
+            });
+        }
+        
+        function renderAllHabits() {
+            habitsContainer.innerHTML = '';
+            if (habitsData.length === 0) {
+                habitsContainer.innerHTML = `
+                    <div class="empty-state">
+                        <h3>No habits yet</h3>
+                        <p>Click "New Habit" to start tracking your first habit</p>
+                    </div>
+                `;
+            } else {
+                habitsData.forEach(habit => {
+                    habitsContainer.appendChild(createHabitCard(habit));
+                });
+            }
+        }
+
+        function createHabitCard(habit) {
+            const card = document.createElement('div');
+            card.className = 'habit-card';
+            card.dataset.id = habit.id;
+            card.dataset.year = new Date().getFullYear();
+
+            const stats = calculateStats(habit.progress);
+
+            card.innerHTML = `
+                <div class="habit-header">
+                    <div>
+                        <h3 class="habit-title">${habit.name}</h3>
+                        <div class="habit-goal">Goal: ${habit.goal} per day</div>
+                    </div>
+                    <div class="habit-controls">
+                        <div class="year-nav">
+                            <button class="year-btn prev-year-btn">‹</button>
+                            <span class="year-display">${card.dataset.year}</span>
+                            <button class="year-btn next-year-btn">›</button>
+                        </div>
+                        <button class="delete-btn delete-habit-btn" title="Delete habit">
+                            <svg width="16" height="16" fill="currentColor">
+                                <path d="M11 1.75V3h2.25a.75.75 0 0 1 0 1.5H2.75a.75.75 0 0 1 0-1.5H5V1.75C5 .784 5.784 0 6.75 0h2.5C10.216 0 11 .784 11 1.75ZM4.496 6.675l.66 6.6a.25.25 0 0 0 .249.225h5.19a.25.25 0 0 0 .249-.225l.66-6.6a.75.75 0 0 1 1.492.149l-.66 6.6A1.748 1.748 0 0 1 10.595 15h-5.19a1.748 1.748 0 0 1-1.741-1.575l-.66-6.6a.75.75 0 1 1 1.492-.15ZM6.5 1.75V3h3V1.75a.25.25 0 0 0-.25-.25h-2.5a.25.25 0 0 0-.25.25Z"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="heatmap-container">
+                    ${createCalendarHeatmap(habit, parseInt(card.dataset.year))}
+                    <div class="legend">
+                        <span>Less</span>
+                        <div class="legend-item">
+                            <div class="legend-cell" style="background: var(--bg-tertiary);"></div>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-cell level-1"></div>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-cell level-2"></div>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-cell level-3"></div>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-cell level-4"></div>
+                        </div>
+                        <span>More</span>
+                    </div>
+                </div>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-value">${stats.total.toLocaleString()}</div>
+                        <div class="stat-label">Total</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">${stats.dailyAverage}</div>
+                        <div class="stat-label">Daily avg</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">${stats.longestStreak}</div>
+                        <div class="stat-label">Best streak</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">${stats.currentStreak}</div>
+                        <div class="stat-label">Current streak</div>
+                    </div>
+                </div>
+            `;
+            return card;
+        }
+        
+        function createCalendarHeatmap(habit, year) {
+            const progress = habit.progress || {};
+            const goal = habit.goal || 1;
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            const days = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+
+            const dayLabelsHtml = `
+                <div class="day-labels">
+                    ${days.map(day => `<div class="day-label">${day}</div>`).join('')}
+                </div>
+            `;
+            
+            let monthsHtml = '';
+            for (let i = 0; i < 12; i++) {
+                let monthGrid = '';
+                const startDate = new Date(year, i, 1);
+                const endDate = new Date(year, i + 1, 0);
+                const startDay = startDate.getDay();
+
+                // Add empty cells for the start of the month
+                for (let j = 0; j < startDay; j++) {
+                    monthGrid += `<div class="day-cell empty"></div>`;
+                }
+
+                // Add cells for each day of the month
+                for (let day = 1; day <= endDate.getDate(); day++) {
+                    const currentDate = new Date(year, i, day);
+                    const dateString = getYYYYMMDD(currentDate);
+                    const value = progress[dateString] || 0;
+                    const intensity = Math.min(value / goal, 1);
+                    
+                    let levelClass = '';
+                    if (value > 0) {
+                        if (intensity <= 0.25) levelClass = 'level-1';
+                        else if (intensity <= 0.5) levelClass = 'level-2';
+                        else if (intensity <= 0.75) levelClass = 'level-3';
+                        else levelClass = 'level-4';
+                    }
+
+                    const formattedDate = currentDate.toLocaleDateString('en-US', { 
+                        weekday: 'short',
+                        month: 'long', 
+                        day: 'numeric' 
+                    });
+                    const tooltipText = `${value} / ${goal} on ${formattedDate}, ${year}`;
+
+                    monthGrid += `
+                        <div class="day-cell ${levelClass}" data-date="${dateString}" data-value="${value}">
+                            <div class="tooltip">${tooltipText}</div>
+                        </div>
+                    `;
+                }
+                
+                monthsHtml += `
+                    <div class="month-container">
+                        <div class="month-label">${months[i]}</div>
+                        <div class="calendar-grid">${monthGrid}</div>
+                    </div>
+                `;
+            }
+
+            return `
+                <div class="calendar-wrapper">
+                    ${dayLabelsHtml}
+                    <div class="months-container">${monthsHtml}</div>
+                </div>
+            `;
+        }
+
+        function calculateStats(progress) {
+            const stats = {
+                total: 0,
+                dailyAverage: '0.0',
+                longestStreak: 0,
+                currentStreak: 0,
+            };
+
+            const entries = Object.entries(progress || {}).filter(([_, value]) => value > 0);
+            if (entries.length === 0) return stats;
+
+            // Calculate Total and Daily Average
+            let totalSum = 0;
+            entries.forEach(([_, value]) => totalSum += value);
+            stats.total = totalSum;
+            stats.dailyAverage = (totalSum / entries.length).toFixed(1);
+
+            // Calculate Streaks
+            const dates = entries.map(([date, _]) => new Date(date)).sort((a, b) => a - b);
+            if (dates.length === 0) return stats;
+
+            let currentStreak = 1;
+            let longestStreak = 1;
+            
+            for (let i = 1; i < dates.length; i++) {
+                const diff = (dates[i] - dates[i-1]) / (1000 * 60 * 60 * 24);
+                if (diff === 1) {
+                    currentStreak++;
+                } else {
+                    longestStreak = Math.max(longestStreak, currentStreak);
+                    currentStreak = 1;
+                }
+            }
+            stats.longestStreak = Math.max(longestStreak, currentStreak);
+
+            // Check current streak from today
+            const today = new Date();
+            today.setHours(0,0,0,0);
+            const lastDate = dates[dates.length - 1];
+            lastDate.setHours(0,0,0,0);
+            
+            const diffFromToday = (today - lastDate) / (1000 * 60 * 60 * 24);
+
+            if (diffFromToday <= 1) {
+                stats.currentStreak = currentStreak;
+            } else {
+                stats.currentStreak = 0;
+            }
+
+            return stats;
+        }
+
+        function getYYYYMMDD(date) {
+            return date.toISOString().split('T')[0];
+        }
+
+        function toggleModal(modal, show) {
+            modal.style.display = show ? 'flex' : 'none';
+            if (show) {
+                const input = modal.querySelector('input[type="number"], input[type="text"]');
+                if(input) setTimeout(() => input.focus(), 100);
+            } else {
+                const form = modal.querySelector('form');
+                if(form) form.reset();
+            }
+        }
+
+        async function handleAddHabit(e) {
+            e.preventDefault();
+            const newHabit = {
+                name: habitNameInput.value.trim(),
+                goal: parseInt(habitGoalInput.value, 10),
+                createdAt: new Date(),
+                userId: userId,
+                progress: {}
+            };
+            try {
+                const habitsCollectionRef = collection(db, `artifacts/${appId}/users/${userId}/habits`);
+                await addDoc(habitsCollectionRef, newHabit);
+                showMessage(`"${newHabit.name}" habit created!`, "success");
+                toggleModal(habitModal, false);
+            } catch (error) {
+                console.error("Error adding document: ", error);
+                showMessage("Failed to create habit.", "error");
+            }
+        }
+        
+        async function handleEditEntry(e) {
+            e.preventDefault();
+            const habitId = editHabitIdInput.value;
+            const date = editDateInput.value;
+            const value = parseInt(editValueInput.value, 10);
+
+            if (isNaN(value) || value < 0) {
+                showMessage("Please enter a valid non-negative number.", "error");
+                return;
+            }
+
+            const habitDocRef = doc(db, `artifacts/${appId}/users/${userId}/habits`, habitId);
+            const progressUpdate = { [`progress.${date}`]: value };
+
+            try {
+                await updateDoc(habitDocRef, progressUpdate);
+                showMessage("Entry updated!", "success");
+                toggleModal(editEntryModal, false);
+            } catch (error) {
+                console.error("Error updating entry:", error);
+                showMessage("Failed to update entry.", "error");
+            }
+        }
+
+        function handleHabitCardClicks(e) {
+            const button = e.target.closest('button');
+            const cell = e.target.closest('.day-cell:not(.empty)');
+            const card = e.target.closest('[data-id]');
+            if (!card) return;
+
+            const habitId = card.dataset.id;
+            const habit = habitsData.find(h => h.id === habitId);
+            if (!habit) return;
+
+            if (button && button.classList.contains('prev-year-btn')) {
+                let year = parseInt(card.dataset.year) - 1;
+                card.dataset.year = year;
+                card.querySelector('.year-display').textContent = year;
+                const heatmapContainer = card.querySelector('.heatmap-container');
+                const legend = heatmapContainer.querySelector('.legend');
+                heatmapContainer.innerHTML = createCalendarHeatmap(habit, year);
+                heatmapContainer.appendChild(legend);
+            }
+            else if (button && button.classList.contains('next-year-btn')) {
+                let year = parseInt(card.dataset.year) + 1;
+                card.dataset.year = year;
+                card.querySelector('.year-display').textContent = year;
+                const heatmapContainer = card.querySelector('.heatmap-container');
+                const legend = heatmapContainer.querySelector('.legend');
+                heatmapContainer.innerHTML = createCalendarHeatmap(habit, year);
+                heatmapContainer.appendChild(legend);
+            }
+            else if (button && button.classList.contains('delete-habit-btn')) {
+                if (confirm(`Are you sure you want to delete "${habit.name}"?\n\nThis action cannot be undone.`)) {
+                    const habitDocRef = doc(db, `artifacts/${appId}/users/${userId}/habits`, habitId);
+                    deleteDoc(habitDocRef).then(() => {
+                        showMessage("Habit deleted.", "success");
+                    }).catch(err => {
+                        console.error("Delete error:", err);
+                        showMessage("Failed to delete habit.", "error");
+                    });
+                }
+            }
+            else if (cell) {
+                const date = cell.dataset.date;
+                const value = parseInt(cell.dataset.value) || 0;
+                const formattedDate = new Date(date).toLocaleDateString('en-US', { 
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
+                
+                editHabitIdInput.value = habitId;
+                editDateInput.value = date;
+                editValueInput.value = value;
+                editDateLabel.textContent = `Value for ${formattedDate}`;
+                toggleModal(editEntryModal, true);
+            }
+        }
+        
+        function showMessage(message, type = 'success') {
+            const messageToast = document.getElementById('message-toast');
+            const messageText = document.getElementById('message-text');
+            
+            messageText.textContent = message;
+            messageToast.className = `message-toast ${type} show`;
+            
+            setTimeout(() => {
+                messageToast.classList.remove('show');
+            }, 4000);
+        }
+
+        function handleModalClick(e) {
+            if (e.target === e.currentTarget) {
+                toggleModal(e.currentTarget, false);
+            }
+        }
+
+        addHabitBtn.addEventListener('click', () => toggleModal(habitModal, true));
+        cancelBtn.addEventListener('click', () => toggleModal(habitModal, false));
+        habitForm.addEventListener('submit', handleAddHabit);
+        
+        editCancelBtn.addEventListener('click', () => toggleModal(editEntryModal, false));
+        editEntryForm.addEventListener('submit', handleEditEntry);
+
+        habitModal.addEventListener('click', handleModalClick);
+        editEntryModal.addEventListener('click', handleModalClick);
+
+        habitsContainer.addEventListener('click', handleHabitCardClicks);
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                if (habitModal.style.display !== 'none') toggleModal(habitModal, false);
+                if (editEntryModal.style.display !== 'none') toggleModal(editEntryModal, false);
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeFirebase();
+            authenticateUser();
+        });
+
+    </script>
+</body>
+</html>
